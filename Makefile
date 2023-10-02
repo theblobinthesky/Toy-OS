@@ -26,8 +26,6 @@ bin/floppy.bin: boot_src/boot.o
 all: bin/padder bin/floppy.bin
 	./bin/padder bin/floppy.bin
 
-run: all
-
 clean: clean-disasm
 	rm -f bin/*
 	rm -f boot_src/*.o
