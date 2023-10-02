@@ -61,6 +61,9 @@ hlt
 
 
 print_string:
+mov $vga_text_buffer, %ax
+mov %ax, %es
+
 # write text to buffer
 mov $0, %cx
 
