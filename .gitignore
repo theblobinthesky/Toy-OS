@@ -1,0 +1,5 @@
+**/*.o
+**/*_disasm.S
+**/*.bin
+bin/padder
+bochs.log

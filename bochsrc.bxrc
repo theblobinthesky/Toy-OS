@@ -1,0 +1,14 @@
+# display_library: sdl
+# display_bochs_extension: yes
+# display_width: 800
+# display_height: 600
+# display_bits_per_pixel: 16
+
+romimage: file=$BXSHARE/BIOS-bochs-latest
+vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
+floppya: 1_44=bin/floppy.bin, status=inserted
+boot: floppy
+
+log: bochs.log
+logprefix: %t%e%d
+debug: action=ignore
