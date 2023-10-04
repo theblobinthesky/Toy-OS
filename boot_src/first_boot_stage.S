@@ -7,7 +7,7 @@
 jmp main # near jump
 nop # pad to 3 bytes
 
-bootsector:
+bootsector: # TODO: copy the real values over; these are not the real ones anymore
     .org 3
     .boot_oem: .ascii "Rick Ast" # TODO: this might be too long
     .org 11
@@ -29,7 +29,6 @@ bootsector:
     .fs_type:               .ascii "FAT12   "
 
 main:
-
 # the stack pointer is not setup yet
 # so don't get interrupted yet
 cli
@@ -64,23 +63,6 @@ movb boot_drive, %dl
 movb $0, %ah # reset the disk
 int $0x13
 jc bootfailure
-
-.macro read_sector_test index
-pushw $\index # lba
-pushw $1 # number of sectors
-pushw $0x4000 # es
-pushw $0x0000 # offset
-call read_sector
-add $8, %sp
-movw %es:0, %ax
-cmp $\index, %ax
-jne bootfailure
-.endm
-
-read_sector_test 1
-read_sector_test 2
-read_sector_test 3
-read_sector_test 4
 
 
 # successful happy noises!
@@ -215,21 +197,3 @@ boot_drive: .byte 0
 .org 510
 .byte 0x55
 .byte 0xaa
-
-# TODO: delete this later
-
-# sector 1
-.org (1*512)
-.word 1
-
-# sector 2
-.org (2*512)
-.word 2
-
-# sector 3
-.org (3*512)
-.word 3
-
-# sector 4
-.org (4*512)
-.word 4
