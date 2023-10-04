@@ -65,12 +65,23 @@ movb $0, %ah # reset the disk
 int $0x13
 jc bootfailure
 
-pushw $1 # lba
+.macro read_sector_test index
+pushw $\index # lba
 pushw $1 # number of sectors
 pushw $0x4000 # es
 pushw $0x0000 # offset
 call read_sector
 add $8, %sp
+movw %es:0, %ax
+cmp $\index, %ax
+jne bootfailure
+.endm
+
+read_sector_test 1
+read_sector_test 2
+read_sector_test 3
+read_sector_test 4
+
 
 # successful happy noises!
 lea happy_noises_str, %bx
@@ -208,17 +219,17 @@ boot_drive: .byte 0
 # TODO: delete this later
 
 # sector 1
-.org (2*512)
+.org (1*512)
 .word 1
 
 # sector 2
-.org (3*512)
+.org (2*512)
 .word 2
 
 # sector 3
-.org (4*512)
+.org (3*512)
 .word 3
 
 # sector 4
-.org (5*512)
+.org (4*512)
 .word 4
