@@ -8,6 +8,7 @@ romimage: file=$BXSHARE/BIOS-bochs-latest
 vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
 floppya: 1_44=bin/floppy.bin, status=inserted
 boot: floppy
+memory: guest=32mb, host=32mb
 
 log: bochs.log
 logprefix: %t%e%d
