@@ -1,8 +1,7 @@
 .code16
-.section .boot, "ax"
-.set vga_text_buffer, 0xb800
-.set vga_text_buffer_end_offset, 0x7fff - 1
-.set load_address, 0x7c00
+.section .boot1, "ax"
+.set boot1_load_address, 0x7c00
+.set boot2_load_address, (boot1_load_address + 0x200)
 .set root_directory_num_sectors, 14
 .set directory_entries_per_sector, (512/32)
 
@@ -51,7 +50,7 @@ mov %ax, %es
 
 # setup stack to grow down from the load address since the program grows upwards
 # TODO: check if this interferes with the bios so be warned!
-mov $load_address, %bp
+mov $boot1_load_address, %bp
 mov %bp, %sp
 
 # reenable interrupts
@@ -67,14 +66,14 @@ int $0x13
 jc bootfailure
 
 call find_file_in_root_directory
+mov %ax, boot2_first_logical_cluster
 
 call read_fat_sectors
 
-# successful happy noises!
-lea happy_noises_str, %bx
-call print_string
+call read_file
 
-jmp .
+ljmpw $0, $boot2_load_address
+jmp bootfailure # safeguard
 
 # Push the lba address (0-indexed), 
 # then the number of sectors to-be-read,
@@ -186,7 +185,7 @@ find_file_in_root_directory:
             mov %di, %ax # in case we return save it
 
             # load readme file name string into ds:si
-            lea readme_file_name, %si
+            lea boot2_file_name, %si
 
             # strcmp es:di (the entry name) with ds:si (the name you're searching for)
             mov $11, %cx # len(filename + extension) == 1
@@ -205,6 +204,10 @@ find_file_in_root_directory:
     jmp bootfailure
 
     .found_file:
+        # read first logical cluster into ax
+        mov %ax, %bx # TODO: ugly copy
+        movw %es:26(%bx), %ax
+
         leave
         ret
 
@@ -223,58 +226,70 @@ read_fat_sectors:
 
     ret
 
+# TODO: ugly code!
+read_file:
+    mov $boot2_load_address, %di
+    mov boot2_first_logical_cluster, %bx
+
+    .loop:
+        # load segment into memory:
+        # compute physical lba from logical cluster/sector which are the same in fat12
+        # TODO: maybe cluster and sector are not always the same?
+        mov $(33-2), %si    # nocheckin: do the actual computation
+        add %bx, %si        # nocheckin: do the actual computation
+
+        # read sector from disk
+        pushw %si   # lba
+        pushw $1    # number of sectors
+        pushw $0    # es
+        pushw %di   # offset
+        call read_sector
+        add $8, %sp
+
+        # advance to the next sector
+        add sector_size, %di
+
+        # access next sector:
+        # calculate remainder of x1.5 that gets lost when bx is uneven
+        mov %bx, %cx
+        and $1, %cx
+        shl $2, %cx
+
+        # calculate memory offset to read into fat
+        mov %bx, %ax
+        shr $1, %ax
+        add %ax, %bx
+
+        # load fat segment register        
+        mov $f_es, %ax
+        mov %ax, %es
+
+        # load word from fat, shift if bx was uneven and mask away unrelated bits
+        movw %es:(%bx), %dx
+        shr %cl, %dx
+        and $0x0fff, %dx
+        mov %dx, %bx
+
+        # check for last cluster and jump out if necessary
+        cmp $0xff8, %bx
+        jge .exit
+
+        jmp .loop
+
+    .exit:
+        ret 
+
 bootfailure:
     lea boot_failure_str, %bx
     call print_string
 
     jmp .
 
-.macro mov_vga_text_buffer_to_es
-    # vga buffer is at 0xb8000 == (0xb800 << 4)
-    mov $vga_text_buffer, %ax
-    mov %ax, %es
-.endm
+#include "string.S"
 
-clear_vga_buffer:
-    mov_vga_text_buffer_to_es
-
-    mov $0, %bx # offset into vga buffer
-
-    .clearloop:
-    cmp $vga_text_buffer_end_offset, %bx
-    jge .clearexit
-    movw $0x1F00, %es:(%bx) # blue background, white foreground, clear codepoint
-    add $2, %bx
-    jmp .clearloop
-
-    .clearexit:
-    ret
-
-# put the memory offet into %bx
-print_string:
-    mov_vga_text_buffer_to_es
-
-    # write text to buffer
-    mov $0, %cx
-
-    .textloop:
-    mov %cx, %si
-    add %bx, %si    # base + index * 1
-    movb 0(%si), %dl
-    cmpb $0, %dl
-    je .textexit
-
-    mov %cx, %si
-    shl $1, %si     # index * 2
-    movb %dl, %es:(%si)
-    add $1, %cx
-    jmp .textloop
-    .textexit:
-    ret
-
-happy_noises_str: .asciz "We are running in real mode!"
 boot_failure_str: .asciz "Boot loader stage one failed!"
-readme_file_name: .asciz "README  MD "
+boot2_file_name: .asciz "BOOT2   BIN" # the second boot stage
+boot2_first_logical_cluster: .word 0
 boot_drive: .byte 0
 
 # since this is a floppy disk there is no need for a partition table
