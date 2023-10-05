@@ -68,7 +68,7 @@ jc bootfailure
 
 call find_file_in_root_directory
 
-xchgw %bx, %bx 
+call read_fat_sectors
 
 # successful happy noises!
 lea happy_noises_str, %bx
@@ -207,6 +207,21 @@ find_file_in_root_directory:
     .found_file:
         leave
         ret
+
+.set f_es, 0x5000
+.set f_of, 0x0000
+read_fat_sectors:
+    movw num_reserved_sectors, %ax
+    movw sectors_per_fat, %cx 
+    
+    pushw %ax   # lba
+    pushw %cx   # number of sectors
+    pushw $f_es # es
+    pushw $f_of # offset
+    call read_sector
+    add $8, %sp
+
+    ret
 
 bootfailure:
     lea boot_failure_str, %bx
