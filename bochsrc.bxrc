@@ -13,3 +13,4 @@ memory: guest=32mb, host=32mb
 log: bochs.log
 logprefix: %t%e%d
 debug: action=ignore
+magic_break: enabled=1

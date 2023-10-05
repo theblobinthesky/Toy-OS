@@ -3,30 +3,32 @@
 .set vga_text_buffer, 0xb800
 .set vga_text_buffer_end_offset, 0x7fff - 1
 .set load_address, 0x7c00
+.set root_directory_num_sectors, 14
+.set directory_entries_per_sector, (512/32)
 
 jmp main # near jump
 nop # pad to 3 bytes
 
 bootsector: # TODO: copy the real values over; these are not the real ones anymore
     .org 3
-    .boot_oem: .ascii "Rick Ast" # TODO: this might be too long
-    .org 11
-    .sector_size:           .word 512
-    .sectors_per_cluster:   .byte 1
-    .num_reserved_sectors:  .word 1 # at least 1 and starting from lba sector 0 (TODO: does this mean "exclude the mbr sector")
-    .num_fats:              .byte 2 # two fats for redundancy?
-    .max_num_root_entries:  .word 512 # todo: is that right? 
-    .num_sectors:           .word 0 # todo: ?
-    .media_desc:            .byte 0xF0 # DOS Version 3.3, 3 1/2 floppy 1.44MB
-    .sectors_per_fat:       .word 0 # todo: ?
-    .sectors_per_head:      .word 9 # just use these values dude
-    .heads_per_cylinder:    .word 2 # just use these values dude
+    boot_oem: .ascii "Rick Ast" # TODO: this might be too long
+    sector_size:           .word 0x200
+    sectors_per_cluster:   .byte 1
+    num_reserved_sectors:  .word 1 # at least 1 and starting from lba sector 0 (TODO: does this mean "exclude the mbr sector")
+    num_fats:              .byte 2 # two fats for redundancy
+    max_num_root_entries:  .word (14*16) 
+    num_sectors:           .word 0 # todo: ?
+    media_desc:            .byte 0xF0 # DOS Version 3.3, 3 1/2 floppy 1.44MB
+    sectors_per_fat:       .word 0 # todo: ?
+    sectors_per_head:      .word 9 # just use these values dude
+    heads_per_cylinder:    .word 2 # just use these values dude
     .int 0 # ignored for fat12, number of hidden sectors
     .int 0 # only for fat32 and ignored for fat12, total sector count
-    .extended_boot_sig:     .byte 0x29 # indicates another three fields follow
-    .volume_id:             .ascii "seri" # a serial number
-    .volume_label:          .ascii "NO NAME    " # 11 bytes
-    .fs_type:               .ascii "FAT12   "
+    .word 0 # ignored for fat12
+    extended_boot_sig:     .byte 0x29 # indicates another three fields follow
+    volume_id:             .ascii "seri" # a serial number
+    volume_label:          .ascii "NO NAME    " # 11 bytes
+    fs_type:               .ascii "FAT12   "
 
 main:
 # the stack pointer is not setup yet
@@ -64,6 +66,9 @@ movb $0, %ah # reset the disk
 int $0x13
 jc bootfailure
 
+call find_file_in_root_directory
+
+xchgw %bx, %bx 
 
 # successful happy noises!
 lea happy_noises_str, %bx
@@ -80,6 +85,8 @@ jmp .
 read_sector:
     push %bp
     mov %sp, %bp
+
+    pusha # TODO: wasting stack space
 
     mov 10(%bp), %ax # lba address
     mov 8(%bp), %di # number of sectors
@@ -105,14 +112,14 @@ read_sector:
 
     # compute sector
     xor %dx, %dx
-    divw .sectors_per_head # dx:ax / .sectors_per_head
+    divw sectors_per_head # dx:ax / sectors_per_head
     mov %dl, %cl
     add $1, %cl
     # changed state: cl == sector, ax == LBA / S
 
     # compute head and cylinder
     xor %dx, %dx
-    divw .heads_per_cylinder
+    divw heads_per_cylinder
     # changed state: dx == (LBA / S) % H, ax == (LBA / S) / H 
 
     mov %al, %ch
@@ -135,8 +142,71 @@ read_sector:
     int $0x13
     jc bootfailure 
 
+    popa # TODO: wasting stack space
+
     leave
     ret
+
+.set r_es, 0x4000
+.set r_of, 0x0000
+find_file_in_root_directory:
+    push %bp
+    mov %sp, %bp
+
+    # clear the direction flag to ensure forward comparison
+    cld
+    
+    # load directory entry segment into es
+    mov $r_es, %ax
+    mov %ax, %es
+
+    # compute the first sector in the root directory in ax:
+    xor %ax, %ax
+    movb num_fats, %al
+    mulw sectors_per_fat
+    addw num_reserved_sectors, %ax
+
+    mov $root_directory_num_sectors, %bx
+    .sector_loop:
+        pushw %ax   # lba
+        pushw $1    # number of sectors
+        pushw $r_es # es
+        pushw $r_of # offset
+        call read_sector
+        add $6, %sp # don't pop ax here
+        # r_es:r_of contains the next sector
+
+        mov $directory_entries_per_sector, %dx
+        .entry_loop:
+            # load directory entry into di
+            mov %dx, %di
+            dec %di
+            shl $5, %di     # times 32
+            add $r_of, %di  # + base offset
+            mov %di, %ax # in case we return save it
+
+            # load readme file name string into ds:si
+            lea readme_file_name, %si
+
+            # strcmp es:di (the entry name) with ds:si (the name you're searching for)
+            mov $11, %cx # len(filename + extension) == 1
+            repz cmpsb
+            je .found_file
+
+            dec %dx
+            jnz .entry_loop
+
+        pop %ax
+        inc %ax # increase lba for next time
+
+        dec %bx
+        jnz .sector_loop
+    
+    jmp bootfailure
+
+    .found_file:
+        leave
+        ret
 
 bootfailure:
     lea boot_failure_str, %bx
@@ -165,6 +235,7 @@ clear_vga_buffer:
     .clearexit:
     ret
 
+# put the memory offet into %bx
 print_string:
     mov_vga_text_buffer_to_es
 
@@ -188,7 +259,7 @@ print_string:
 
 happy_noises_str: .asciz "We are running in real mode!"
 boot_failure_str: .asciz "Boot loader stage one failed!"
-
+readme_file_name: .asciz "README  MD "
 boot_drive: .byte 0
 
 # since this is a floppy disk there is no need for a partition table

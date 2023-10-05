@@ -33,6 +33,7 @@ $(FLOPPY_FILE): $(MBR_FILE)
 	sudo umount temporary_mount
 	rm -rf temporary_mount
 
+	# dd if=$< of=$@ bs=1 count=512 conv=notrunc status=none
 	dd if=$< of=$@ bs=1 count=3 conv=notrunc status=none
 	dd if=$< of=$@ bs=1 skip=60 seek=60 conv=notrunc status=none
 	
