@@ -69,7 +69,7 @@ read_sector:
     leave
     ret
 
-.macro find_file_in_root_directory root_dir_seg, root_dir_offs
+.macro find_file_in_root_directory root_dir_seg, root_dir_offs, file_name
     push %bp
     mov %sp, %bp
 
@@ -106,7 +106,7 @@ read_sector:
             mov %di, %ax # in case we return save it
 
             # load readme file name string into ds:si
-            lea boot2_file_name, %si
+            lea \file_name, %si
 
             # strcmp es:di (the entry name) with ds:si (the name you're searching for)
             mov $11, %cx # len(filename + extension) == 1

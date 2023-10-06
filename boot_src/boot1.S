@@ -3,11 +3,7 @@
 .section .boot1, "ax"
 .set boot1_load_address, 0x7c00
 .set boot2_load_address, (boot1_load_address + 0x200)
-.set root_directory_num_sectors, 14
-.set directory_entries_per_sector, (512/32)
-.set root_dir_segment, 0x4000
-.set root_dir_offset, 0x0000
-.set fat_segment, 0x5000
+#include "constants.S"
 
 jmp main # near jump
 nop # pad to 3 bytes
@@ -51,11 +47,12 @@ movb $0, %ah # reset the disk
 int $0x13
 jc boot_failure
 
-find_file_in_root_directory root_dir_segment, root_dir_offset
-mov %ax, boot2_first_logical_cluster
-
+# load boot stage 2:
+find_file_in_root_directory root_dir_segment, root_dir_offset, boot2_file_name
+push %ax # push the logical cluster
 read_fat_sectors fat_segment
-read_file fat_segment, boot2_first_logical_cluster, 0x0, boot2_load_address 
+pop %ax # pop the logical cluster
+read_file fat_segment, %ax, 0x0, boot2_load_address 
 
 ljmpw $0, $boot2_load_address
 
@@ -66,8 +63,7 @@ boot_failure:
     jmp .
 
 boot_failure_str: .asciz "Boot loader stage one failed!"
-boot2_file_name: .asciz "BOOT2   BIN" # the second boot stage
-boot2_first_logical_cluster: .word 0
+boot2_file_name: .asciz "BOOT2   BIN"
 boot_drive: .byte 0
 
 #include "string.S"

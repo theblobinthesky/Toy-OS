@@ -39,7 +39,7 @@ src/kmain.o: $(C_OBJS)
 	ld -T src/linker.ld $^ -o $@
 
 $(KERNEL_FILE): src/kmain.o
-	objcopy -O binary -j .text -j .data $< $@
+	objcopy -O binary $< $@
 
 $(FLOPPY_FILE): $(BOOT1_FILE) $(BOOT2_FILE) $(KERNEL_FILE)	
 	mkdir -p temporary_mount

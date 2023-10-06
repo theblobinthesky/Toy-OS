@@ -1,16 +1,25 @@
 .code16
 .section .boot2, "ax"
+#include "constants.S"
 
 jmp main # near jump
 nop # pad to 3 bytes
 
 #include "bootsector.S"
+#include "drive.S"
 
 main:
 call clear_vga_buffer
 
 lea boot2_happy_noises_str, %bx
 call print_string
+
+# load kernel code:
+find_file_in_root_directory root_dir_segment, root_dir_offset, kernel_file_name
+push %ax # push the logical cluster
+read_fat_sectors fat_segment# the fat has already been read by boot stage 1
+pop %ax # pop the logical cluster
+read_file fat_segment, %ax, kernel_segment, 0x0
 
 # switch to protected mode:
 # no exceptions or interrupts must be generated during mode switching
@@ -108,6 +117,8 @@ boot_failure:
 #include "string.S"
 
 boot_failure_str: .asciz "Boot loader stage two failed!"
+kernel_file_name: .asciz "KERNEL  BIN"
+boot_drive: .byte 0
 
 # 32bit territory starts from here:
 .code32
@@ -122,7 +133,8 @@ mov %ax, %gs
 
 mov $0xffffffff, %eax
 movb $'R', 0xb8000
-jmp .
+
+ljmp $code_segment_offset, $kernel_flat_address
 
 boot2_happy_noises_str: .asciz "Happy noises from stage 2!"
 
