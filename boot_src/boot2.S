@@ -1,6 +1,12 @@
 .code16
 .section .boot2, "ax"
 
+jmp main # near jump
+nop # pad to 3 bytes
+
+#include "bootsector.S"
+
+main:
 call clear_vga_buffer
 
 lea boot2_happy_noises_str, %bx
@@ -86,11 +92,11 @@ check_a20:
 enable_a20:
     in $0x92, %al
     test $2, %al
-    jnz .exit
+    jnz .enable_a20_exit
     or $2, %al
     out %al, $0x92
 
-    .exit:
+    .enable_a20_exit:
         ret
 
 boot_failure:

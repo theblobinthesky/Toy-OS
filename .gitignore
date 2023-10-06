@@ -3,3 +3,4 @@
 **/*.bin
 bin/padder
 bochs.log
+boot_src/bootsector.S
