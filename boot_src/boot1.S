@@ -1,3 +1,4 @@
+
 .code16
 .section .boot1, "ax"
 .set boot1_load_address, 0x7c00
@@ -63,7 +64,7 @@ call clear_vga_buffer
 movb boot_drive, %dl
 movb $0, %ah # reset the disk
 int $0x13
-jc bootfailure
+jc boot_failure
 
 call find_file_in_root_directory
 mov %ax, boot2_first_logical_cluster
@@ -73,7 +74,7 @@ call read_fat_sectors
 call read_file
 
 ljmpw $0, $boot2_load_address
-jmp bootfailure # safeguard
+jmp boot_failure # safeguard
 
 # Push the lba address (0-indexed), 
 # then the number of sectors to-be-read,
@@ -139,7 +140,7 @@ read_sector:
     # read to memory at es:bx
 
     int $0x13
-    jc bootfailure 
+    jc boot_failure 
 
     popa # TODO: wasting stack space
 
@@ -201,7 +202,7 @@ find_file_in_root_directory:
         dec %bx
         jnz .sector_loop
     
-    jmp bootfailure
+    jmp boot_failure
 
     .found_file:
         # read first logical cluster into ax
@@ -279,7 +280,7 @@ read_file:
     .exit:
         ret 
 
-bootfailure:
+boot_failure:
     lea boot_failure_str, %bx
     call print_string
 
