@@ -5,11 +5,15 @@
 .set boot2_load_address, (boot1_load_address + 0x200)
 .set root_directory_num_sectors, 14
 .set directory_entries_per_sector, (512/32)
+.set root_dir_segment, 0x4000
+.set root_dir_offset, 0x0000
+.set fat_segment, 0x5000
 
 jmp main # near jump
 nop # pad to 3 bytes
 
 #include "bootsector.S"
+#include "drive.S"
 
 main:
 # the stack pointer is not setup yet
@@ -47,12 +51,11 @@ movb $0, %ah # reset the disk
 int $0x13
 jc boot_failure
 
-call find_file_in_root_directory
+find_file_in_root_directory root_dir_segment, root_dir_offset
 mov %ax, boot2_first_logical_cluster
 
-call read_fat_sectors
-
-call read_file
+read_fat_sectors fat_segment
+read_file fat_segment, boot2_first_logical_cluster, 0x0, boot2_load_address 
 
 ljmpw $0, $boot2_load_address
 
@@ -62,13 +65,12 @@ boot_failure:
 
     jmp .
 
-#include "drive.S"
-#include "string.S"
-
 boot_failure_str: .asciz "Boot loader stage one failed!"
 boot2_file_name: .asciz "BOOT2   BIN" # the second boot stage
 boot2_first_logical_cluster: .word 0
 boot_drive: .byte 0
+
+#include "string.S"
 
 # since this is a floppy disk there is no need for a partition table
 # not enough space anyways so it doesn't matter

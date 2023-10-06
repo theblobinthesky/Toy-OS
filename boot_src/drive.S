@@ -69,9 +69,7 @@ read_sector:
     leave
     ret
 
-.set r_es, 0x4000
-.set r_of, 0x0000
-find_file_in_root_directory:
+.macro find_file_in_root_directory root_dir_seg, root_dir_offs
     push %bp
     mov %sp, %bp
 
@@ -79,7 +77,7 @@ find_file_in_root_directory:
     cld
     
     # load directory entry segment into es
-    mov $r_es, %ax
+    mov $\root_dir_seg, %ax
     mov %ax, %es
 
     # compute the first sector in the root directory in ax:
@@ -92,11 +90,11 @@ find_file_in_root_directory:
     .sector_loop:
         pushw %ax   # lba
         pushw $1    # number of sectors
-        pushw $r_es # es
-        pushw $r_of # offset
+        pushw $\root_dir_seg  # es
+        pushw $\root_dir_offs # offset
         call read_sector
         add $6, %sp # don't pop ax here
-        # r_es:r_of contains the next sector
+        # root_dir_seg:root_dir_offs contains the next sector
 
         mov $directory_entries_per_sector, %dx
         .entry_loop:
@@ -104,7 +102,7 @@ find_file_in_root_directory:
             mov %dx, %di
             dec %di
             shl $5, %di     # times 32
-            add $r_of, %di  # + base offset
+            add $\root_dir_offs, %di # + base offset
             mov %di, %ax # in case we return save it
 
             # load readme file name string into ds:si
@@ -132,27 +130,23 @@ find_file_in_root_directory:
         movw %es:26(%bx), %ax
 
         leave
-        ret
+.endm
 
-.set f_es, 0x5000
-.set f_of, 0x0000
-read_fat_sectors:
+.macro read_fat_sectors fat_segment
     movw num_reserved_sectors, %ax
     movw sectors_per_fat, %cx 
     
     pushw %ax   # lba
     pushw %cx   # number of sectors
-    pushw $f_es # es
-    pushw $f_of # offset
+    pushw $\fat_segment # es
+    pushw $0     # offset
     call read_sector
     add $8, %sp
+.endm
 
-    ret
-
-# TODO: ugly code!
-read_file:
-    mov $boot2_load_address, %di
-    mov boot2_first_logical_cluster, %bx
+.macro read_file fat_segment, fat_logical_cluster, memory_segment, memory_address
+    mov $\memory_address, %di
+    mov \fat_logical_cluster, %bx
 
     .loop:
         # load segment into memory:
@@ -164,7 +158,7 @@ read_file:
         # read sector from disk
         pushw %si   # lba
         pushw $1    # number of sectors
-        pushw $0    # es
+        pushw $\memory_segment # es
         pushw %di   # offset
         call read_sector
         add $8, %sp
@@ -184,7 +178,7 @@ read_file:
         add %ax, %bx
 
         # load fat segment register        
-        mov $f_es, %ax
+        mov $\fat_segment, %ax
         mov %ax, %es
 
         # load word from fat, shift if bx was uneven and mask away unrelated bits
@@ -200,4 +194,4 @@ read_file:
         jmp .loop
 
     .exit:
-        ret 
+ .endm
