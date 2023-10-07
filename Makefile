@@ -1,10 +1,12 @@
 ME=Makefile
 C_SRCS=$(wildcard src/*.c)
+ASM_SRCS=$(wildcard src/*.S)
+
 C_DISASM=$(patsubst %.c,%_disasm.S,$(C_SRCS))
-ASM_SRCS=$(wildcard boot_src/*.S src/*.S)
 
 C_OBJS=$(patsubst %.c,%_c.o,$(C_SRCS))
 ASM_OBJS=$(patsubst %.S,%_S.o,$(ASM_SRCS))
+
 BOOT_OBJS=boot_src/boot1_S.o boot_src/boot2_S.o
 
 FLOPPY_FILE=bin/floppy.bin
@@ -35,7 +37,7 @@ $(BOOT1_FILE): boot_src/boot.o
 $(BOOT2_FILE): boot_src/boot.o
 	objcopy -O binary -j .boot2 $< $@
 
-src/kmain.o: $(C_OBJS)
+src/kmain.o: $(ASM_OBJS) $(C_OBJS)
 	ld -T src/linker.ld $^ -o $@
 
 $(KERNEL_FILE): src/kmain.o

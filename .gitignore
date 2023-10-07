@@ -1,6 +1,6 @@
 **/*.o
 **/*_disasm.S
 **/*.bin
-bin/padder
+bin/**
 bochs.log
 boot_src/bootsector.S
