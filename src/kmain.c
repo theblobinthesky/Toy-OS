@@ -1,6 +1,6 @@
 int wait_forever() {
     while(1) {
-        __asm__("nop");
+        __asm__ volatile("nop");
     }
 }
 
@@ -18,24 +18,9 @@ void out(int port, char value) {
                  : "Nd" (port), "a" (value));
 }
 
-#define FB_WIDTH  80
-#define FB_HEIGHT 60
+#define FB_WIDTH 640
+#define FB_HEIGHT 480
 #define FB_STRIDE (FB_WIDTH / 8)
-#define INPUT_STATUS_ONE_REG_PORT 0x3da
-
-void clear_display() {
-    char* vga_buffer = (char*) 0xa0000;
-
-    for(int i = 0; i < 64 * 1024; i++) {
-        vga_buffer[i] = 0xff;
-    }
-
-    // for(int y = 0; y < FB_HEIGHT * 16; y++) {
-    //     for(int x = 0; x < FB_STRIDE; x++) {
-    //         vga_text_buffer[y * FB_STRIDE + x] = 0xff;
-    //     }
-    // }
-}
 
 struct write_temporary {
     char data;
@@ -88,6 +73,7 @@ struct attr_reg {
 
 struct write_temporary begin_attrib_write(struct attr_reg* reg) {
     // Input a value from the Input Status #1 Register (normally port 3DAh) and discard it.
+#define INPUT_STATUS_ONE_REG_PORT 0x3da
     inp(INPUT_STATUS_ONE_REG_PORT);
 
     // Read the value of the Address/Data Register and save it for step 7.
@@ -124,10 +110,13 @@ void external_reg_write(int write_port, char data) {
     out(write_port, data);
 }
 
-int kmain() {
-    char* vga_text_buffer = (char*) 0xb8000;
-    *vga_text_buffer = 'K';
+void enable_color_plane(int index) {
+#define SEQUENCER_ADDRESS_PORT 0x3c4
+#define SEQUENCER_DATA_PORT 0x3c5
+    vga_reg_write(SEQUENCER_ADDRESS_PORT, SEQUENCER_DATA_PORT, 0x02, 1 << index);
+}
 
+void init_graphics() {
     // todo: disable screen
     // todo: unlock crtc registers
 #define CRTC_ADDRESS_PORT 0x3d4
@@ -165,8 +154,6 @@ int kmain() {
     // todo: investigate
 
     // sequencer registers:
-#define SEQUENCER_ADDRESS_PORT 0x3c4
-#define SEQUENCER_DATA_PORT 0x3c5
 #define CLOCKING_MODE_REG_INDEX 0x01
     vga_reg_write(SEQUENCER_ADDRESS_PORT, SEQUENCER_DATA_PORT, CLOCKING_MODE_REG_INDEX, 0x01);
     // todo: investigate
@@ -210,8 +197,26 @@ int kmain() {
     vga_reg_write(CRTC_ADDRESS_PORT, CRTC_DATA_PORT, 0x15, 0xe7);
     vga_reg_write(CRTC_ADDRESS_PORT, CRTC_DATA_PORT, 0x16, 0x04);
     vga_reg_write(CRTC_ADDRESS_PORT, CRTC_DATA_PORT, 0x17, 0xe3);
+}
 
+void clear_display() {
+    char* vga_buffer = (char*) 0xa0000;
 
+    enable_color_plane(0);
+    for(int i = 0; i < (64 * 1024); i++) vga_buffer[i] = 0xff;
+
+    enable_color_plane(1);
+    for(int i = 0; i < (64 * 1024); i++) vga_buffer[i] = 0x00;
+
+    enable_color_plane(2);
+    for(int i = 0; i < (64 * 1024); i++) vga_buffer[i] = 0xff;
+
+    enable_color_plane(3);
+    for(int i = 0; i < (64 * 1024); i++) vga_buffer[i] = 0x00;
+}
+
+int kmain() {
+    init_graphics();
     clear_display();    
     wait_forever();
 }
