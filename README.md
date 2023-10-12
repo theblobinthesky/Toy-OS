@@ -6,3 +6,6 @@ Information about fat12:
 - https://averstak.tripod.com/fatdox/bootsec.htm#fis
 - https://averstak.tripod.com/fatdox/fatintro.htm
 - https://de.wikipedia.org/wiki/File_Allocation_Table#FAT12
+
+Information about vga:
+- http://www.osdever.net/FreeVGA/vga/vgamem.htm
