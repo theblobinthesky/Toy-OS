@@ -1,5 +1,6 @@
 ME=Makefile
 C_SRCS=$(wildcard src/*.c)
+C_HEADERS=$(wildcard src/*.h)
 ASM_SRCS=$(wildcard src/*.S)
 
 C_DISASM=$(patsubst %.c,%_disasm.S,$(C_SRCS))
@@ -22,10 +23,10 @@ $(BOOTSECTOR_S_FILE): boot_src/bootsector_parser.py
 	mkfs.fat -F 12 -s 1 $(FLOPPY_FILE)
 	python3 $< > $@
 
-%_c.o: %.c $(ME)
+%_c.o: %.c $(ME) $(C_HEADERS)
 	gcc $(GCC_ARGS) $< -o $@
 
-%_S.o: %.S $(ME)
+%_S.o: %.S $(ME) $(C_HEADERS)
 	gcc $(GCC_ARGS) $< -o $@
 
 boot_src/boot.o: $(BOOTSECTOR_S_FILE) $(BOOT_OBJS)

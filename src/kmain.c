@@ -1,3 +1,4 @@
+#include "interrupt.h"
 #include "screen_driver.h"
 
 int wait_forever() {
@@ -25,14 +26,17 @@ void show_color_pattern(struct rect r, bool mode) {
 }
 
 void kmain() {
-    screen_init_driver();
+    interrupt_init();
+    __asm__ volatile("int $9");
+    
+    // screen_init_driver();
 
-    const int padding = 60;
-    struct rect r2 = { padding, padding, FB_WIDTH - padding * 2, FB_HEIGHT - padding * 2 };
-    show_color_pattern(r2, false);
+    // const int padding = 60;
+    // struct rect r2 = { padding, padding, FB_WIDTH - padding * 2, FB_HEIGHT - padding * 2 };
+    // show_color_pattern(r2, false);
 
-    struct rect r = SCREEN_FB_RECT;
-    show_color_pattern(r, true);
+    // struct rect r = SCREEN_FB_RECT;
+    // show_color_pattern(r, true);
 
     wait_forever();
 }
