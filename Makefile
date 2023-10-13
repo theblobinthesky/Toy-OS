@@ -15,7 +15,7 @@ BOOT1_FILE=bin/boot1.bin
 BOOT2_FILE=bin/boot2.bin
 KERNEL_FILE=bin/kernel.bin
 
-GCC_ARGS=-c -ffreestanding -m32 --no-pic
+GCC_ARGS=-c -ffreestanding -m32 --no-pic -O3 
 
 $(BOOTSECTOR_S_FILE): boot_src/bootsector_parser.py
 	dd if=/dev/zero of=$(FLOPPY_FILE) bs=1024 count=1440 status=none

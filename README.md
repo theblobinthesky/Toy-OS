@@ -9,3 +9,4 @@ Information about fat12:
 
 Information about vga:
 - http://www.osdever.net/FreeVGA/vga/vgamem.htm
+- http://www.osdever.net/FreeVGA/home.htm#vga
