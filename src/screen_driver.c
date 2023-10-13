@@ -1,8 +1,7 @@
-#include "utils.h"
 #include "screen_driver.h"
 
-#define FB_BITS_PER_BYTE 8
-#define FB_STRIDE (FB_WIDTH / FB_BITS_PER_BYTE)
+#define FB_BITS_PER_GROUP 8
+#define FB_STRIDE (FB_WIDTH / FB_BITS_PER_GROUP)
 
 struct write_temporary {
     char data;
@@ -263,19 +262,19 @@ static void clear_screen() {
     }
 }
 
-static void write_to_vga_buffer(int vga_plane) {
+static void write_to_vga_buffer(int vga_plane, struct rect r) {
     volatile char* vga_buffer = (char*) 0xa0000;
 
     for(int i = 0; i < FB_HEIGHT * FB_STRIDE; i++) vga_buffer[i] = 0;
 
-    for(int y = 0; y < FB_HEIGHT; y++) {
-        for(int s = 0; s < FB_STRIDE; s++) {
+    for(int y = r.y; y < rect_get_bottom(r); y++) {
+        for(int s = r.x / FB_BITS_PER_GROUP; s < (rect_get_right(r) + FB_BITS_PER_GROUP) / FB_BITS_PER_GROUP; s++) {
             int i = y * FB_STRIDE + s;
             
             char byte = 0;
 
-            for(int b = 0; b < FB_BITS_PER_BYTE; b++) {
-                int x = s * FB_BITS_PER_BYTE + b;
+            for(int b = 0; b < FB_BITS_PER_GROUP; b++) {
+                int x = s * FB_BITS_PER_GROUP + b;
                 
                 char fb_r = screen_get_fb(x, y, FB_CH_R);
                 char fb_g = screen_get_fb(x, y, FB_CH_G);
@@ -296,17 +295,22 @@ char* screen_get_screen_framebuffer() {
 }
 
 void screen_bit_blit() {
+    struct rect screen_rect = { 0, 0, FB_WIDTH, FB_HEIGHT };
+    screen_bit_blit_rect(screen_rect);
+}
+
+void screen_bit_blit_rect(struct rect r) {
     enable_color_plane(0);
-    write_to_vga_buffer(0);
+    write_to_vga_buffer(0, r);
 
     enable_color_plane(1);
-    write_to_vga_buffer(1);
+    write_to_vga_buffer(1, r);
 
     enable_color_plane(2);
-    write_to_vga_buffer(2);
+    write_to_vga_buffer(2, r);
 
     enable_color_plane(3);
-    write_to_vga_buffer(3);
+    write_to_vga_buffer(3, r);
 }
 
 void screen_init_driver() {

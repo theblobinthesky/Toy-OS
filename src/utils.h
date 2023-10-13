@@ -17,3 +17,11 @@ inline static void out(int port, char value) {
                  :
                  : "Nd" (port), "a" (value));
 }
+
+struct rect {
+    int x, y;
+    int w, h;
+};
+
+#define rect_get_right(r) (r.x + r.w)
+#define rect_get_bottom(r) (r.y + r.h)
