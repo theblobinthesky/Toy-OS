@@ -51,5 +51,5 @@ NO_ERRC_HANDLER(45, irq13);
 NO_ERRC_HANDLER(46, irq14);
 NO_ERRC_HANDLER(47, irq15);
 // 48-255 are user defined.
-NO_ERRC_HANDLER(33, syscall);
-NO_ERRC_HANDLER(33, default);
+NO_ERRC_HANDLER(128, syscall);
+NO_ERRC_HANDLER(256, default);
