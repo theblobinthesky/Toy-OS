@@ -138,8 +138,9 @@ ljmp $code_segment_offset, $kernel_flat_address
 
 boot2_happy_noises_str: .asciz "Happy noises from stage 2!"
 
-.align 8 # nocheckin: align might be unnecessary
+.align 8 # NOTE: align might be unnecessary
 gdt:
+.gdt_zero_segment_entry:
     # 0th entry: zero entry
     .int 0x0
     .int 0x0

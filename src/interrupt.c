@@ -1,8 +1,8 @@
 #include "interrupt.h"
 #include "utils.h"
 
-#define KERNEL_MODE_DATA_SEGMENT 0x0
-#define KERNEL_MODE_CODE_SEGMENT 0x8
+#define KERNEL_MODE_CODE_SEGMENT 8
+#define KERNEL_MODE_DATA_SEGMENT 16
 
 typedef void(*interrupt_handler)();
 
@@ -17,12 +17,12 @@ struct intr_desc_32 {
    u16 offset_high;
 } __attribute__((packed));
 
-struct intr_desc_32 intr_desc_table[INTERRUPT_TABLE_SIZE];
+struct intr_desc_32 intr_desc_table[INTERRUPT_TABLE_SIZE] __attribute__((aligned(8)));
 
 struct intr_desc_table_desc {
     u16 size;
     u32 offset;
-} __attribute((packed));
+}__attribute((packed));
 
 void load_intr_desc_table(struct intr_desc_32* idt) {
     struct intr_desc_table_desc desc = {
@@ -42,7 +42,7 @@ static void set_kintr(int index, interrupt_handler handler) {
 
 struct intr_desc_32 get_intr_desc_32(void(*intr_handler)(), bool kernel_privilege, bool is_interrupt) {
     struct intr_desc_32 desc = {0};
-    desc.offset_high = ((u32)intr_handler >> 16) & 0xffff;
+    desc.offset_low = ((u32)intr_handler) & 0xffff;
     desc.selector = KERNEL_MODE_CODE_SEGMENT;
     desc.zero = 0;
 
@@ -53,7 +53,7 @@ struct intr_desc_32 get_intr_desc_32(void(*intr_handler)(), bool kernel_privileg
     if(is_interrupt) desc.type_attributes |= 0xE;
     else desc.type_attributes |= 0xF; // trap gate
 
-    desc.offset_low = (u32)intr_handler & 0xffff;
+    desc.offset_high = ((u32)intr_handler >> 16) & 0xffff;
 
     return desc;
 }
@@ -63,6 +63,7 @@ void set_intr_table_entry(int index, void(*intr_handler)()) {
 }
 
 void intr_handler_common(int intr_index) {
+    BOCHS_BREAK();
     kintr_handlers[intr_index]();
 }
 
@@ -110,7 +111,7 @@ static void kintr_handler_default() {
 }
 
 void interrupt_init() {
-    // disable_interrupts(); TODO: this breaks stuff
+    disable_interrupts();
 
     void intr_handler_default();
     void kintr_handler_default();
@@ -125,5 +126,5 @@ void interrupt_init() {
 
     load_intr_desc_table(intr_desc_table);
 
-    // enable_interrupts(); TODO: this breaks stuff 
+    enable_interrupts();
 }

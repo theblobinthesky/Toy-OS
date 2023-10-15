@@ -16,7 +16,12 @@ BOOT1_FILE=bin/boot1.bin
 BOOT2_FILE=bin/boot2.bin
 KERNEL_FILE=bin/kernel.bin
 
-GCC_ARGS=-c -ffreestanding -m32 --no-pic -O3
+COMMON_GCC_ARGS=-c -ffreestanding -m32 --no-pic
+ifeq ($(BUILT_TYPE),debug)
+	GCC_ARGS = $(COMMON_GCC_ARGS) -g -Ddebug
+else
+	GCC_ARGS = $(COMMON_GCC_ARGS) -O3
+endif
 
 $(BOOTSECTOR_S_FILE): boot_src/bootsector_parser.py
 	dd if=/dev/zero of=$(FLOPPY_FILE) bs=1024 count=1440 status=none

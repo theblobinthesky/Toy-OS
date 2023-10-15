@@ -27,8 +27,7 @@ void show_color_pattern(struct rect r, bool mode) {
 
 void kmain() {
     interrupt_init();
-    __asm__ volatile("int $9");
-    
+
     // screen_init_driver();
 
     // const int padding = 60;
