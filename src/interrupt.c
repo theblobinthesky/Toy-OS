@@ -104,6 +104,7 @@ static void kintr_handler_irq13() {};
 static void kintr_handler_irq14() {};       
 static void kintr_handler_irq15() {};
 
+static void kintr_handler_syscall() {};
 static void kintr_handler_default() {
     // empty
 }

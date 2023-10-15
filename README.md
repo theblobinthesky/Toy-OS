@@ -18,3 +18,5 @@ Information about interrupts:
 - https://wiki.osdev.org/Interrupts
 - https://wiki.osdev.org/Interrupt_Service_Routines
 - https://wiki.osdev.org/Interrupt_Descriptor_Table
+
+Information about pci:
