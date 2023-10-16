@@ -19,11 +19,13 @@ inline static char inp(int port) {
     return result;
 }
 
-inline static void out(int port, char value) {
+inline static void outb(int port, char value) {
     __asm__ volatile("out %1, %0"
                  :
                  : "Nd" (port), "a" (value));
 }
+
+#define io_wait() outb(0x80, 0x0)
 
 struct rect {
     int x, y;

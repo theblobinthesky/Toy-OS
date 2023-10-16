@@ -20,7 +20,7 @@ struct write_temporary begin_vga_reg_write(struct vga_reg* reg) {
     char old_addr = inp(reg->addr_port);
 
     // Output the index of the desired Data Register to the Address Register.
-    out(reg->addr_port, reg->reg_index);
+    outb(reg->addr_port, reg->reg_index);
 
     // Read the value of the Data Register and save it for later restoration upon termination, if needed.
     struct write_temporary ret = {
@@ -33,10 +33,10 @@ struct write_temporary begin_vga_reg_write(struct vga_reg* reg) {
 
 static void end_vga_reg_write(struct vga_reg* reg, struct write_temporary* write) {
     // If writing, write the new value from step 4 to the Data register.
-    out(reg->data_port, write->data);
+    outb(reg->data_port, write->data);
 
     // Write the value of Address register saved in step 1 to the Address Register.
-    out(reg->addr_port, write->old_addr);
+    outb(reg->addr_port, write->old_addr);
 }
 
 static void vga_reg_write(int addr_port, int data_port, int reg_index, char data) {
@@ -61,7 +61,7 @@ struct write_temporary begin_attrib_write(struct attr_reg* reg) {
     char old_addr_data = inp(reg->addr_data_reg_port);
     
     // Output the index of the desired Data Register to the Address/Data Register
-    out(reg->addr_data_reg_port, reg->reg_index);
+    outb(reg->addr_data_reg_port, reg->reg_index);
     
     // Read the value of the Data Register and save it for later restoration upon termination, if needed.
     struct write_temporary ret = {
@@ -74,10 +74,10 @@ struct write_temporary begin_attrib_write(struct attr_reg* reg) {
 
 static void end_attrib_write(struct attr_reg* reg, struct write_temporary* write) {
     // If writing, write the new value from step 5 to the Address/Data register.
-    out(reg->addr_data_reg_port, write->data);
+    outb(reg->addr_data_reg_port, write->data);
     
     // Write the value of Address register saved in step 1 to the Address/Data Register.
-    out(reg->addr_data_reg_port, write->old_addr);
+    outb(reg->addr_data_reg_port, write->old_addr);
 }
 
 static void attrib_reg_write(int addr_data_reg_port, int data_reg_port, int reg_index, char data) {
@@ -88,7 +88,7 @@ static void attrib_reg_write(int addr_data_reg_port, int data_reg_port, int reg_
 }
 
 static void external_reg_write(int write_port, char data) {
-    out(write_port, data);
+    outb(write_port, data);
 }
 
 static void enable_color_plane(int index) {
@@ -208,10 +208,10 @@ static void init_vga_palette() {
 
     for(char i = 0; i < PALETTE_SIZE; i++) {
         int color = sixteen_colors_to_24bit_conversion[i];
-        out(DAC_ADDR_WRITE_MODE_REG_PORT, i);
-        out(DAC_DATA_REG_PORT, GET_CH_R(color) >> 2); // color values are only 6-bit wide, so divide by 4
-        out(DAC_DATA_REG_PORT, GET_CH_G(color) >> 2);
-        out(DAC_DATA_REG_PORT, GET_CH_B(color) >> 2);
+        outb(DAC_ADDR_WRITE_MODE_REG_PORT, i);
+        outb(DAC_DATA_REG_PORT, GET_CH_R(color) >> 2); // color values are only 6-bit wide, so divide by 4
+        outb(DAC_DATA_REG_PORT, GET_CH_G(color) >> 2);
+        outb(DAC_DATA_REG_PORT, GET_CH_B(color) >> 2);
     }
 }
 
@@ -250,7 +250,7 @@ static char lookup_color(char r, char g, char b) {
     return index;
 }
 
-char* screen_framebuffer = (char*)0x100000;
+char* screen_framebuffer = (char*)0x1000;
 
 static void clear_screen() {
     for(int y = 0; y < FB_HEIGHT; y++) {
@@ -318,6 +318,6 @@ void screen_init_driver() {
     init_vga_device();
     init_vga_palette();
     clear_screen();
-    screen_bit_blit();    
-    modify_screen_disable(false);
+    // screen_bit_blit();    
+    // modify_screen_disable(false);
 }

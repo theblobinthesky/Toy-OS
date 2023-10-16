@@ -17,7 +17,7 @@ BOOT2_FILE=bin/boot2.bin
 KERNEL_FILE=bin/kernel.bin
 
 COMMON_GCC_ARGS=-c -ffreestanding -m32 --no-pic
-ifeq ($(BUILT_TYPE),debug)
+ifeq ($(BUILD_TYPE),debug)
 	GCC_ARGS = $(COMMON_GCC_ARGS) -g -Ddebug
 else
 	GCC_ARGS = $(COMMON_GCC_ARGS) -O3
@@ -72,7 +72,7 @@ clean: clean-disasm
 # disassembly
 
 %_disasm.S: %.c
-	gcc -c -S -fverbose-asm -O1 $< -o $@
+	gcc -S -fverbose-asm $(GCC_ARGS) $< -o $@
 
 disasm: $(C_DISASM)
 

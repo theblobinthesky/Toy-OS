@@ -28,6 +28,7 @@ void show_color_pattern(struct rect r, bool mode) {
 void kmain() {
     interrupt_init();
 
+    // wait until we have paged memory mapping to enable this again!
     // screen_init_driver();
 
     // const int padding = 60;

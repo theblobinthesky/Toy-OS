@@ -10,7 +10,7 @@
 
 #define NO_ERRC_HANDLER(index, name) ERRC_HANDLER(index, name)
 #endif
-
+ 
 NO_ERRC_HANDLER(0, divide_error);       // Fault, DE (divide error)
 NO_ERRC_HANDLER(1, debug_exception);    // Fault/Trap, DB (debug exception)
 NO_ERRC_HANDLER(2, nmi);                // Interrupt, (Non-maskable external)
