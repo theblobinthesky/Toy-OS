@@ -1,9 +1,9 @@
-def get_gdt_entry(executable: bool, kernel_ring: bool):
+def get_gdt_entry(executable: bool, kernel_mode: bool):
     base = 0x0
     limit = 0xfffff
 
     present_bit = 1 << 7
-    dpl = 0 if kernel_ring else 3
+    dpl = (0 if kernel_mode else 3) << 5
     type_bit = 1 << 4       # make this a code or data segment
     executable_bit = (1 << 3) if executable else 0
     dc_bit = 0
@@ -29,9 +29,23 @@ def get_gdt_entry(executable: bool, kernel_ring: bool):
 executable_modes = [False, True]
 kernel_ring_modes = [False, True]
 
-for executable_mode in executable_modes:
-    for kernel_ring_mode in kernel_ring_modes:
-        entry = get_gdt_entry(executable=executable_mode, kernel_ring=kernel_ring_mode)
-        entry_low = entry & 0xffffffff
-        entry_high = (entry >> 32) & 0xffffffff
-        print(f"{'code' if executable_mode else 'data'} segment, {'kernel' if kernel_ring_mode else 'userspace'} privilege: 0x{entry_low:08x} 0x{entry_high:08x}")
+def get_low_u32(num):
+    return num & 0xffffffff
+
+def get_high_u32(num):
+    return (num >> 32) & 0xffffffff
+
+entries = [
+    ("kernel code segment", True, True),
+    ("kernel data segment", False, True),
+    ("user code segment", True, False),
+    ("user data segment", False, False),
+]
+
+for i, (name, executable, kernel_mode) in enumerate(entries):
+    gdt_entry = get_gdt_entry(executable, kernel_mode)
+    print(f".gdt_{name.replace(' ', '_')}_entry:")
+    print(f"    # entry {i + 1}: {name} (see gdt_generator.py)")
+    print(f"    .int 0x{get_low_u32(gdt_entry):08x}")
+    print(f"    .int 0x{get_high_u32(gdt_entry):08x}")
+    print()

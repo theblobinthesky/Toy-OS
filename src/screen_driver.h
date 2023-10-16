@@ -15,3 +15,6 @@ char* screen_get_screen_framebuffer();
 void screen_bit_blit();
 void screen_bit_blit_rect(struct rect r);
 void screen_init_driver();
+
+// NOTE: temporary api
+void print_string(char* str);

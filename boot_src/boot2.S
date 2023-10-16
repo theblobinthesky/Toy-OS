@@ -55,7 +55,7 @@ or $1, %ax # set PE (protected mode) flag
 mov %eax, %cr0
 
 # serialize the processor using a far jump instruction to prevent pipeline inconsistencies
-ljmp $code_segment_offset, $protected_mode_entry # also sets the code segment cs to the right descriptor
+ljmp $kernel_code_segment_offset, $protected_mode_entry # also sets the code segment cs to the right descriptor
 
 check_a20:
     pushw %ds
@@ -124,7 +124,7 @@ boot_drive: .byte 0
 .code32
 protected_mode_entry:
 # set the segment registers to the right descriptor
-mov $data_segment_offset, %ax
+mov $kernel_data_segment_offset, %ax
 mov %ax, %es
 mov %ax, %ss
 mov %ax, %ds
@@ -134,30 +134,42 @@ mov %ax, %gs
 mov $0xffffffff, %eax
 movb $'R', 0xb8000
 
-ljmp $code_segment_offset, $kernel_flat_address
+ljmp $kernel_code_segment_offset, $kernel_flat_address
 
 boot2_happy_noises_str: .asciz "Happy noises from stage 2!"
 
 .align 8 # NOTE: align might be unnecessary
 gdt:
 .gdt_zero_segment_entry:
-    # 0th entry: zero entry
+    # entry 0: zero entry
     .int 0x0
     .int 0x0
 
-.gdt_code_segment_entry:
-    # 1st entry: kernel code segment (see gdt_generator.py)
+.gdt_kernel_code_segment_entry:
+    # entry 1: kernel code segment (see gdt_generator.py)
     .int 0x0000ffff
     .int 0x00cf9b00
 
-.gdt_data_segment_entry:
-    # 2nd entry: kernel data segment (see gdt_generator.py)
+.gdt_kernel_data_segment_entry:
+    # entry 2: kernel data segment (see gdt_generator.py)
     .int 0x0000ffff
     .int 0x00cf9300
+
+.gdt_user_code_segment_entry:
+    # entry 3: user code segment (see gdt_generator.py)
+    .int 0x0000ffff
+    .int 0x00cffb00
+
+.gdt_user_data_segment_entry:
+    # entry 4: user data segment (see gdt_generator.py)
+    .int 0x0000ffff
+    .int 0x00cff300
 gdt_end:
 
-.set code_segment_offset, (.gdt_code_segment_entry - gdt)
-.set data_segment_offset, (.gdt_data_segment_entry - gdt) 
+.set kernel_code_segment_offset, (.gdt_kernel_code_segment_entry - gdt)
+.set kernel_data_segment_offset, (.gdt_kernel_data_segment_entry - gdt) 
+.set user_code_segment_offset, (.gdt_user_code_segment_entry - gdt)
+.set user_data_segment_offset, (.gdt_user_data_segment_entry - gdt) 
 
 .align 8 # nocheckin: align might be unnecessary
 gdt_descriptor:

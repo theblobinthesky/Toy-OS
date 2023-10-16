@@ -321,3 +321,16 @@ void screen_init_driver() {
     // screen_bit_blit();    
     // modify_screen_disable(false);
 }
+
+// NOTE: temporary api
+void print_string(char* str) {
+    char* vga_text_buffer = (char*) 0xb8000;
+
+    for(int i = 0; i < 80 * 25; i++) vga_text_buffer[2 * i] = 0;
+
+    int i = 0;
+    while(str[i] != 0) {
+        vga_text_buffer[2 * i] = str[i];
+        i++;
+    }
+}

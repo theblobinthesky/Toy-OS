@@ -19,4 +19,4 @@ Information about interrupts:
 - https://wiki.osdev.org/Interrupt_Service_Routines
 - https://wiki.osdev.org/Interrupt_Descriptor_Table
 
-Information about pci:
+Information about images for sata devices:
