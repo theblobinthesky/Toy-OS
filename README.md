@@ -1,5 +1,7 @@
 A tiny operating system which is so sick and has totally never been done before ..!
-Take this (especially the "drivers") with a large grain of salt and do not use this as a reference implementation.
+This repository contains a simple two-stage bootloader and sets up interrupts, the legacy pic and graphics mode of a vga driver.
+The Makefile creates a 1.4MB floppy disk image that will probably only run on emulators. 
+Obviously take this with a large grain of salt and do not use this as a reference implementation.
 
 Information about fat12:
 - http://www.independent-software.com/operating-system-development-first-and-second-stage-bootloaders.html
@@ -18,5 +20,3 @@ Information about interrupts:
 - https://wiki.osdev.org/Interrupts
 - https://wiki.osdev.org/Interrupt_Service_Routines
 - https://wiki.osdev.org/Interrupt_Descriptor_Table
-
-Information about images for sata devices:
